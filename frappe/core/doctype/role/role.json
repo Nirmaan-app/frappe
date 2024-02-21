@@ -10,6 +10,7 @@
   "role_name",
   "home_page",
   "restrict_to_domain",
+  "module",
   "column_break_4",
   "disabled",
   "is_custom",
@@ -142,13 +143,19 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Custom"
+  },
+  {
+   "fieldname": "module",
+   "fieldtype": "Link",
+   "label": "Module",
+   "options": "Module Def"
   }
  ],
  "icon": "fa fa-bookmark",
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-08 15:52:37.525003",
+ "modified": "2024-02-21 18:32:59.470662",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Role",

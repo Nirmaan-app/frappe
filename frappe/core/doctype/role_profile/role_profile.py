@@ -17,9 +17,9 @@ class RoleProfile(Document):
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
 
+		module: DF.Link | None
 		role_profile: DF.Data
 		roles: DF.Table[HasRole]
-
 	# end: auto-generated types
 	def autoname(self):
 		"""set name as Role Profile name"""

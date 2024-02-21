@@ -36,7 +36,8 @@
   {
    "fieldname": "address_title",
    "fieldtype": "Data",
-   "label": "Address Title"
+   "label": "Address Title",
+   "reqd": 1
   },
   {
    "fieldname": "address_type",
@@ -44,7 +45,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Address Type",
-   "options": "Billing\nShipping\nOffice\nPersonal\nPlant\nPostal\nShop\nSubsidiary\nWarehouse\nCurrent\nPermanent\nOther",
+   "options": "Project\nCustomer",
    "reqd": 1
   },
   {
@@ -70,6 +71,7 @@
    "search_index": 1
   },
   {
+   "default": "India",
    "fieldname": "county",
    "fieldtype": "Data",
    "label": "County"
@@ -77,7 +79,8 @@
   {
    "fieldname": "state",
    "fieldtype": "Data",
-   "label": "State/Province"
+   "label": "State/Province",
+   "reqd": 1
   },
   {
    "fieldname": "country",
@@ -93,6 +96,7 @@
    "fieldname": "pincode",
    "fieldtype": "Data",
    "label": "Postal Code",
+   "reqd": 1,
    "search_index": 1
   },
   {
@@ -109,7 +113,8 @@
   {
    "fieldname": "phone",
    "fieldtype": "Data",
-   "label": "Phone"
+   "label": "Phone",
+   "reqd": 1
   },
   {
    "fieldname": "fax",
@@ -150,52 +155,12 @@
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2023-11-20 17:28:41.698356",
+ "modified": "2024-02-21 18:20:34.689589",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
  "owner": "Administrator",
  "permissions": [
-  {
-   "create": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Sales User",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Purchase User",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Maintenance User",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Accounts User",
-   "share": 1,
-   "write": 1
-  },
   {
    "create": 1,
    "delete": 1,
@@ -222,5 +187,6 @@
  "search_fields": "country, state",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

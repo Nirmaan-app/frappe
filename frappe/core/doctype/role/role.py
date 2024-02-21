@@ -35,6 +35,7 @@ class Role(Document):
 		home_page: DF.Data | None
 		is_custom: DF.Check
 		list_sidebar: DF.Check
+		module: DF.Link | None
 		notifications: DF.Check
 		restrict_to_domain: DF.Link | None
 		role_name: DF.Data
@@ -42,7 +43,6 @@ class Role(Document):
 		timeline: DF.Check
 		two_factor_auth: DF.Check
 		view_switcher: DF.Check
-
 	# end: auto-generated types
 	def before_rename(self, old, new, merge=False):
 		if old in STANDARD_ROLES:

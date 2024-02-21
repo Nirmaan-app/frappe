@@ -24,21 +24,8 @@ class Address(Document):
 
 		address_line1: DF.Data
 		address_line2: DF.Data | None
-		address_title: DF.Data | None
-		address_type: DF.Literal[
-			"Billing",
-			"Shipping",
-			"Office",
-			"Personal",
-			"Plant",
-			"Postal",
-			"Shop",
-			"Subsidiary",
-			"Warehouse",
-			"Current",
-			"Permanent",
-			"Other",
-		]
+		address_title: DF.Data
+		address_type: DF.Literal["Project", "Customer"]
 		city: DF.Data
 		country: DF.Link
 		county: DF.Data | None
@@ -48,10 +35,9 @@ class Address(Document):
 		is_primary_address: DF.Check
 		is_shipping_address: DF.Check
 		links: DF.Table[DynamicLink]
-		phone: DF.Data | None
-		pincode: DF.Data | None
-		state: DF.Data | None
-
+		phone: DF.Data
+		pincode: DF.Data
+		state: DF.Data
 	# end: auto-generated types
 	def __setup__(self):
 		self.flags.linked = False
