@@ -140,11 +140,14 @@ class User(Document):
 		create_notification_settings(self.name)
 		frappe.cache.delete_key("users_for_mentions")
 		frappe.cache.delete_key("enabled_users")
-		doc = frappe.new_doc("Nirmaan Users")
-		doc.first_name = self.first_name
-		doc.email = self.email
-		doc.role_profile = self.role_profile_name
-		doc.save()
+		try:
+			doc = frappe.new_doc("Nirmaan Users")
+			doc.first_name = self.first_name
+			doc.email = self.email
+			doc.role_profile = self.role_profile_name
+			doc.save()
+		except:
+			pass
 
 	def validate(self):
 		# clear new password
@@ -232,13 +235,15 @@ class User(Document):
 			frappe.cache.delete_key("enabled_users")
 		elif self.has_value_changed("allow_in_mentions") or self.has_value_changed("user_type"):
 			frappe.cache.delete_key("users_for_mentions")
-		
-		doc = frappe.get_doc("Nirmaan Users", self.name)
-		if(self.last_name!=""):
-			doc.last_name= self.last_name
-		if(self.mobile_no!=""):
-			doc.phone=self.mobile_no
-		doc.save()
+		try:
+			doc = frappe.get_doc("Nirmaan Users", self.name)
+			if(self.last_name!=""):
+				doc.last_name= self.last_name
+			if(self.mobile_no!=""):
+				doc.phone=self.mobile_no
+			doc.save()
+		except:
+			pass
 
 	def has_website_permission(self, ptype, user, verbose=False):
 		"""Returns true if current user is the session user"""

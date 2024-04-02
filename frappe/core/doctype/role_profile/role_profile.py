@@ -56,8 +56,12 @@ class RoleProfile(Document):
 				user.roles = []
 				user.add_roles(*role_profile_roles)
 	def after_insert(self):
-		doc = frappe.new_doc('Nirmaan Roles')
-		doc.role_name = self.role_profile
-		doc.role_profile = self.role_profile
-		doc.save()
+		try:
+			doc = frappe.new_doc('Nirmaan Roles')
+			doc.role_name = self.role_profile
+			doc.role_profile = self.role_profile
+			doc.save()
+		except:
+			pass
+
 
