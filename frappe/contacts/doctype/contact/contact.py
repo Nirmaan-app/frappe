@@ -256,7 +256,7 @@ def contact_query(doctype, txt, searchfield, start, page_len, filters):
 	link_name = filters.pop("link_name")
 
 	return frappe.db.sql(
-		"""select
+		f"""select
 			`tabContact`.name, `tabContact`.full_name, `tabContact`.company_name
 		from
 			`tabContact`, `tabDynamic Link`
@@ -265,12 +265,12 @@ def contact_query(doctype, txt, searchfield, start, page_len, filters):
 			`tabDynamic Link`.parenttype = 'Contact' and
 			`tabDynamic Link`.link_doctype = %(link_doctype)s and
 			`tabDynamic Link`.link_name = %(link_name)s and
-			`tabContact`.`{key}` like %(txt)s
-			{mcond}
+			`tabContact`.`{searchfield}` like %(txt)s
+			{get_match_cond(doctype)}
 		order by
 			if(locate(%(_txt)s, `tabContact`.full_name), locate(%(_txt)s, `tabContact`.company_name), 99999),
 			`tabContact`.idx desc, `tabContact`.full_name
-		limit %(start)s, %(page_len)s """.format(mcond=get_match_cond(doctype), key=searchfield),
+		limit %(start)s, %(page_len)s """,
 		{
 			"txt": "%" + txt + "%",
 			"_txt": txt.replace("%", ""),
@@ -386,7 +386,7 @@ def get_contact_display_list(doctype: str, name: str) -> list[dict]:
 			["Dynamic Link", "parenttype", "=", "Contact"],
 		],
 		fields=["*"],
-		order_by="is_primary_contact DESC, creation ASC",
+		order_by="is_primary_contact DESC, `tabContact`.creation ASC",
 	)
 
 	for contact in contact_list:

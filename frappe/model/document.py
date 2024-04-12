@@ -29,6 +29,10 @@ if TYPE_CHECKING:
 	from frappe.core.doctype.docfield.docfield import DocField
 
 
+DOCUMENT_LOCK_EXPIRTY = 12 * 60 * 60  # All locks expire in 12 hours automatically
+DOCUMENT_LOCK_SOFT_EXPIRY = 60 * 60  # Let users force-unlock after 60 minutes
+
+
 def get_doc(*args, **kwargs):
 	"""returns a frappe.model.Document object.
 
@@ -157,7 +161,7 @@ class Document(BaseDocument):
 
 		else:
 			get_value_kwargs = {"for_update": self.flags.for_update, "as_dict": True}
-			if not isinstance(self.name, (dict, list)):
+			if not isinstance(self.name, dict | list):
 				get_value_kwargs["order_by"] = None
 
 			d = frappe.db.get_value(
@@ -198,9 +202,11 @@ class Document(BaseDocument):
 		if hasattr(self, "__setup__"):
 			self.__setup__()
 
+		return self
+
 	def reload(self):
 		"""Reload document from database"""
-		self.load_from_db()
+		return self.load_from_db()
 
 	def get_latest(self):
 		if not getattr(self, "_doc_before_save", None):
@@ -583,6 +589,7 @@ class Document(BaseDocument):
 			d._validate_selects()
 			d._validate_non_negative()
 			d._validate_length()
+			d._fix_rating_value()
 			d._validate_code_fields()
 			d._sync_autoname_field()
 			d._extract_images_from_text_editor()
@@ -895,7 +902,7 @@ class Document(BaseDocument):
 		if not missing:
 			return
 
-		for fieldname, msg in missing:
+		for idx, msg in missing:  # noqa: B007
 			msgprint(msg)
 
 		if frappe.flags.print_messages:
@@ -1264,7 +1271,7 @@ class Document(BaseDocument):
 			doc_to_compare = frappe.get_doc(self.doctype, amended_from)
 
 		version = frappe.new_doc("Version")
-		if is_useful_diff := version.update_version_info(doc_to_compare, self):
+		if version.update_version_info(doc_to_compare, self):
 			version.insert(ignore_permissions=True)
 
 			if not frappe.flags.in_migrate:
@@ -1452,8 +1459,8 @@ class Document(BaseDocument):
 		)
 
 	def get_signature(self):
-		"""Returns signature (hash) for private URL."""
-		return hashlib.sha224(get_datetime_str(self.creation).encode()).hexdigest()
+		"""Return signature (hash) for private URL."""
+		return hashlib.sha224(f"{self.doctype}:{self.name}".encode(), usedforsecurity=False).hexdigest()
 
 	def get_document_share_key(self, expires_on=None, no_expiry=False):
 		if no_expiry:
@@ -1511,16 +1518,37 @@ class Document(BaseDocument):
 		try:
 			self.lock()
 		except frappe.DocumentLockedError:
+			# Allow unlocking if created more than 60 minutes ago
+			primary_action = None
+			if file_lock.lock_age(self.get_signature()) > DOCUMENT_LOCK_SOFT_EXPIRY:
+				primary_action = {
+					"label": "Force Unlock",
+					"server_action": "frappe.model.document.unlock_document",
+					"hide_on_success": True,
+					"args": {
+						"doctype": self.doctype,
+						"name": self.name,
+					},
+				}
+
 			frappe.throw(
-				_("This document is currently queued for execution. Please try again"),
+				_(
+					"This document is currently locked and queued for execution. Please try again after some time."
+				),
 				title=_("Document Queued"),
+				primary_action=primary_action,
 			)
+
+		enqueue_after_commit = kwargs.pop("enqueue_after_commit", None)
+		if enqueue_after_commit is None:
+			enqueue_after_commit = True
 
 		return enqueue(
 			"frappe.model.document.execute_action",
 			__doctype=self.doctype,
 			__name=self.name,
 			__action=action,
+			enqueue_after_commit=enqueue_after_commit,
 			**kwargs,
 		)
 
@@ -1532,8 +1560,11 @@ class Document(BaseDocument):
 		signature = self.get_signature()
 		if file_lock.lock_exists(signature):
 			lock_exists = True
+			if file_lock.lock_age(signature) > DOCUMENT_LOCK_EXPIRTY:
+				file_lock.delete_lock(signature)
+				lock_exists = False
 			if timeout:
-				for i in range(timeout):
+				for _ in range(timeout):
 					time.sleep(1)
 					if not file_lock.lock_exists(signature):
 						lock_exists = False
@@ -1688,10 +1719,20 @@ def _document_values_generator(
 ) -> Generator[tuple[Any], None, None]:
 	for doc in documents:
 		doc.creation = doc.modified = now()
-		doc.created_by = doc.modified_by = frappe.session.user
+		doc.owner = doc.modified_by = frappe.session.user
 		doc_values = doc.get_valid_dict(
 			convert_dates_to_str=True,
 			ignore_nulls=True,
 			ignore_virtual=True,
 		)
 		yield tuple(doc_values.get(col) for col in columns)
+
+
+@frappe.whitelist()
+def unlock_document(doctype: str | None = None, name: str | None = None, args=None):
+	if not doctype and not name and args:
+		# Backward compatibility
+		doctype = str(args["doctype"])
+		name = str(args["name"])
+	frappe.get_doc(doctype, name).unlock()
+	frappe.msgprint(frappe._("Document Unlocked"), alert=True)

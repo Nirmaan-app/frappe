@@ -36,6 +36,8 @@ class ServerScript(Document):
 			"Before Save",
 			"After Insert",
 			"After Save",
+			"Before Rename",
+			"After Rename",
 			"Before Submit",
 			"After Submit",
 			"Before Cancel",
@@ -44,6 +46,7 @@ class ServerScript(Document):
 			"After Delete",
 			"Before Save (Submitted Document)",
 			"After Save (Submitted Document)",
+			"Before Print",
 			"On Payment Authorization",
 		]
 		enable_rate_limit: DF.Check
@@ -211,7 +214,7 @@ class ServerScript(Document):
 				if key.startswith("_"):
 					continue
 				value = obj[key]
-				if isinstance(value, (NamespaceDict, dict)) and value:
+				if isinstance(value, NamespaceDict | dict) and value:
 					if key == "form_dict":
 						out.append(["form_dict", 7])
 						continue
@@ -223,7 +226,7 @@ class ServerScript(Document):
 						score = 0
 					elif isinstance(value, ModuleType):
 						score = 10
-					elif isinstance(value, (FunctionType, MethodType)):
+					elif isinstance(value, FunctionType | MethodType):
 						score = 9
 					elif isinstance(value, type):
 						score = 8

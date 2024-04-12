@@ -50,6 +50,7 @@ from frappe.utils.data import (
 	add_to_date,
 	add_years,
 	cast,
+	cint,
 	cstr,
 	duration_to_seconds,
 	expand_relative_urls,
@@ -175,8 +176,15 @@ class TestFilters(FrappeTestCase):
 			)
 		)
 
-	def test_like_not_like(self):
-		doc = {"doctype": "User", "username": "test_abc", "prefix": "startswith", "suffix": "endswith"}
+	def test_filter_evaluation(self):
+		doc = {
+			"doctype": "User",
+			"username": "test_abc",
+			"prefix": "startswith",
+			"suffix": "endswith",
+			"empty": None,
+			"number": 0,
+		}
 
 		test_cases = [
 			([["username", "like", "test"]], True),
@@ -187,10 +195,15 @@ class TestFilters(FrappeTestCase):
 			([["prefix", "not like", "end%"]], True),
 			([["suffix", "like", "%with"]], True),
 			([["suffix", "not like", "%end"]], True),
+			([["suffix", "is", "set"]], True),
+			([["suffix", "is", "not set"]], False),
+			([["empty", "is", "set"]], False),
+			([["empty", "is", "not set"]], True),
+			([["number", "is", "set"]], True),
 		]
 
 		for filter, expected_result in test_cases:
-			self.assertEqual(evaluate_filters(doc, filter), expected_result)
+			self.assertEqual(evaluate_filters(doc, filter), expected_result, msg=f"{filter}")
 
 
 class TestMoney(FrappeTestCase):
@@ -462,7 +475,7 @@ class TestPythonExpressions(FrappeTestCase):
 			try:
 				validate_python_code(expr)
 			except Exception as e:
-				self.fail(f"Invalid error thrown for valid expression: {expr}: {str(e)}")
+				self.fail(f"Invalid error thrown for valid expression: {expr}: {e!s}")
 
 	def test_validation_for_bad_python_expression(self):
 		invalid_expressions = [
@@ -700,7 +713,7 @@ class TestResponse(FrappeTestCase):
 
 		self.assertTrue(all([isinstance(x, str) for x in processed_object["time_types"]]))
 		self.assertTrue(all([isinstance(x, float) for x in processed_object["float"]]))
-		self.assertTrue(all([isinstance(x, (list, str)) for x in processed_object["iter"]]))
+		self.assertTrue(all([isinstance(x, list | str) for x in processed_object["iter"]]))
 		self.assertIsInstance(processed_object["string"], str)
 		with self.assertRaises(TypeError):
 			json.dumps(BAD_OBJECT, default=json_handler)
@@ -983,7 +996,7 @@ class TestMiscUtils(FrappeTestCase):
 
 
 class TestTypingValidations(FrappeTestCase):
-	ERR_REGEX = f"^Argument '.*' should be of type '.*' but got '.*' instead.$"
+	ERR_REGEX = "^Argument '.*' should be of type '.*' but got '.*' instead.$"
 
 	def test_validate_whitelisted_api(self):
 		@frappe.whitelist()
@@ -1019,9 +1032,9 @@ class TestTypingValidations(FrappeTestCase):
 class TestTBSanitization(FrappeTestCase):
 	def test_traceback_sanitzation(self):
 		try:
-			password = "42"
+			password = "42"  # noqa: F841
 			args = {"password": "42", "pwd": "42", "safe": "safe_value"}
-			args = frappe._dict({"password": "42", "pwd": "42", "safe": "safe_value"})
+			args = frappe._dict({"password": "42", "pwd": "42", "safe": "safe_value"})  # noqa: F841
 			raise Exception
 		except Exception:
 			traceback = frappe.get_traceback(with_context=True)
@@ -1182,8 +1195,17 @@ class TestRounding(FrappeTestCase):
 	def test_default_rounding(self):
 		self.assertEqual(frappe.get_system_settings("rounding_method"), "Banker's Rounding")
 
+	@given(
+		st.floats(min_value=-(2**32) - 1, max_value=2**32 + 1),
+		st.integers(min_value=-(2**63) - 1, max_value=2**63 + 1),
+	)
+	def test_cint(self, floating_point, integer):
+		self.assertEqual(cint(integer), integer)
+		self.assertEqual(cint(str(integer)), integer)
+		self.assertEqual(cint(str(floating_point)), int(floating_point))
 
-class TestTypingValidations(FrappeTestCase):
+
+class TestArgumentTypingValidations(FrappeTestCase):
 	def test_validate_argument_types(self):
 		from frappe.core.doctype.doctype.doctype import DocType
 		from frappe.utils.typing_validations import FrappeTypeError, validate_argument_types
